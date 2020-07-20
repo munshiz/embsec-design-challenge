@@ -24,11 +24,11 @@ def protect_firmware(infile, outfile, version, message):
     
     metadata += struct.pack("<H", len(encrypted_fw)) #adds the length of encrypted firmware to metadata
     
-    hashed_fw = SHA256.new(data=metadata + encrypted_Fw) #hashes the firmware and the metadata (IV should be added)
+    hashed_fw = SHA256.new(data = metadata + cipher.iv + encrypted_Fw) #hashes the metadata, IV, and encrypted firmware
     
     signature = pkcs1_15.new(rsa_key).sign(hashed_fw) #signs the hashed firmware
     
-    fw_blob = signature + metadata + encrypted_fw #creates blob to be sent to bootloader
+    fw_blob = signature + metadata + cipher.iv + encrypted_fw #creates blob to be sent to bootloader
     
     with open(outfile, "w+b") as out: #writes firmware blob to another file
         out.write(fw_blob)
