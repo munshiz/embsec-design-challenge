@@ -2,6 +2,7 @@
 Firmware Bundle-and-Protect Tool
 
 """
+<<<<<<< HEAD
 
 """
     Metadata(version number, size of encrypted firmware) will come prepended and a copy will come signed with the hash of the firmware.
@@ -27,12 +28,17 @@ from Crypto.PublicKey import RSA
 import Crypto.signature
 from Crypto.Hash import SHA256
 import Crypto.Random
+=======
+import argparse
+import struct
+>>>>>>> edd99dd4ef3e1627ae1069b4cd407a4aff540dec
 
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
     with open(infile, 'rb') as fp:
         firmware = fp.read()
+<<<<<<< HEAD
     
     key = Crypto.Random.get_random_bytes(16)
     
@@ -47,6 +53,8 @@ def protect_firmware(infile, outfile, version, message):
     
     rsa_key = RSA.generate(2048)
     
+=======
+>>>>>>> edd99dd4ef3e1627ae1069b4cd407a4aff540dec
 
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
