@@ -5,7 +5,9 @@ from Crypto.Util import Padding
 from Crypto.Signature import pkcs1_15
 import struct
 """
-
+f = unencrypted firmware
+    F = encrypted firmware
+    signed(hash(F)) | version | size(f) | message | len(F) | IV | F
 """
 def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as f: #gets firmware
