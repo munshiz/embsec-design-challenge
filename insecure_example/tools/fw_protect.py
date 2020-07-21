@@ -4,7 +4,8 @@ Firmware Bundle-and-Protect Tool
 """
 import argparse
 import struct
-
+import Crypto.Cipher
+from Crypto.Hash import SHA256
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
