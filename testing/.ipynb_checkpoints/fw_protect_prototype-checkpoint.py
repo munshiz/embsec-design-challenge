@@ -7,7 +7,7 @@ import struct
 """
 f = unencrypted firmware
     F = encrypted firmware
-    signed(hash(F)) | version | size(f) | size(F) | IV | F
+    signed(hash(metadata | IV | F)) | version | size(f) | size(F) | IV | F
 """
 def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as f: #gets firmware
