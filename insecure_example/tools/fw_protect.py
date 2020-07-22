@@ -14,7 +14,7 @@ Firmware Bundle-and-Protect Tool
     New idea:
     f = unencrypted firmware
     F = encrypted firmware
-    signed(hash(F)) | plaintext(version | size(f) | message | len(F) | IV) | F
+    signed(hash(F)) | version | size(f) | message | len(F) | IV | F
     
     The size of the decrypted firmware will come in the encrypted metadata in the actual firmware. 
     The metadata appended to the hash will incorporate only a copy of the version number and a calculated size of the encrypted firmware,
