@@ -30,13 +30,22 @@ FRAME_SIZE = 16
 
 def send_metadata(ser, metadata, debug=False):
     """
-    f = unencrypted firmware
-    F = encrypted firmware
-    signed(hash(metadata| IV | F)) | version | size(f) | size(F) | IV | F
+    Metadata(version number, size of encrypted firmware) will come prepended and a copy will come signed with the hash of the firmware.
+    An unsigned metadata will come prepended to the signed hash in order for us to be able to display and send it here.
+    
+    The data looks like this:
+    plaintext(version | size(F)) | signed(hash(F) | version | size(F)) | F
+    
+    The size of the decrypted firmware will come in the encrypted metadata in the actual firmware. 
+    The metadata appended to the hash will incorporate only a copy of the version number and a calculated size of the encrypted firmware,
+    and will be the same metadata that will be prepended to the signed hash.
+    
+    This leaves us with 3 copies of the version number and 2 copies of the encrypted firmware's size, 
+    and no need to change the send_metadata method.
     
     """
-    version, firmware_size, encrypted_firm_size = struct.unpack_from('<HHH', metadata)
-    print(f'Version: {version}\nFirmware Size: {firmware_size} bytes\nEncrypted Firmware size: {encrypted_firm_size}')
+    version, size = struct.unpack_from('<HH', metadata)
+    print(f'Version: {version}\nSize: {size} bytes\n')
 
     # Handshake for update
     ser.write(b'U')
@@ -79,8 +88,8 @@ def main(ser, infile, debug):
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read()
 
-    metadata = firmware_blob[256:260]
-    firmware = firmware_blob[0:255] + firmware_blob[260:]
+    metadata = firmware_blob[:4]
+    firmware = firmware_blob[4:]
 
     send_metadata(ser, metadata, debug=debug)
 
@@ -121,6 +130,5 @@ if __name__ == '__main__':
     print('Opening serial port...')
     ser = Serial(args.port, baudrate=115200, timeout=2)
     main(ser=ser, infile=args.firmware, debug=args.debug)
-
 
 
