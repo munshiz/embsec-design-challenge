@@ -2,7 +2,7 @@
  * Wrapper around a bearssl implementation of RSA signing
  * Made by Tom Hughes
  *
- * Note: there is no use of ssl in this file
+ * Note: there is no use or implementation of ssl in this file
  *
 */
 #include <stdint.h>
@@ -17,8 +17,8 @@
  * Parameters:
  * signature: the signed hash
  * modulus: the rsa modulus, using MODULUS_SIZE bytes
- * exponent: the public exponent
- * exp_size: size of the exponent
+ * exponent: the public exponent in big endian format. leading 0 bytes are allowed.
+ * exp_size: size of the exponent in bytes
  * data: the data authenticity to be checked
  * data_len: the length of the data
  *

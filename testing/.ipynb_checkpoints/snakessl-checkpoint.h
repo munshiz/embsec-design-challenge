@@ -2,7 +2,7 @@
  * Wrapper around a bearssl implementation of RSA signing
  * Made by Tom Hughes
  *
- * Note: there is no use of ssl in this file
+ * Note: there is no use or implementation of ssl in this file
  *
 */
 #include <stdint.h>
