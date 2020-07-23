@@ -32,11 +32,11 @@ def send_metadata(ser, metadata, debug=False):
     """
     f = unencrypted firmware
     F = encrypted firmware
-    [signed(hash(F))] | version | size(f) | message | len(F) | IV | F
+    signed(hash(metadata| IV | F)) | version | size(f) | size(F) | IV | F
     
     """
-    version, size = struct.unpack_from('<HH', metadata)
-    print(f'Version: {version}\nSize: {size} bytes\n')
+    version, firmware_size, encrypted_firm_size = struct.unpack_from('<HHH', metadata)
+    print(f'Version: {version}\nFirmware Size: {firmware_size} bytes\nEncrypted Firmware size: {encrypted_firm_size}')
 
     # Handshake for update
     ser.write(b'U')
@@ -78,9 +78,9 @@ def main(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read()
-
-    metadata = firmware_blob[256:260]
-    firmware = firmware_blob[0:255] + firmware_blob[260:]
+    signed_hash = firmware_blob[:256]
+    metadata = firmware_blob[256:262]
+    firmware = firmware_blob[262:]
 
     send_metadata(ser, metadata, debug=debug)
 

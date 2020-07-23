@@ -27,6 +27,8 @@ Firmware Bundle-and-Protect Tool
 
 import argparse
 import struct
+import Crypto.Cipher
+from Crypto.Hash import SHA256
 #import cryptodome stuff
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA

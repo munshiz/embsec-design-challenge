@@ -7,7 +7,7 @@ import struct
 """
 f = unencrypted firmware
     F = encrypted firmware
-    signed(hash(F)) | version | size(f) | message | len(F) | IV | F
+    signed(hash(metadata | IV | F)) | version | size(f) | size(F) | IV | F
 """
 def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as f: #gets firmware
@@ -22,7 +22,7 @@ def protect_firmware(infile, outfile, version, message):
         
     cipher = AES.new(aes_key, AES.MODE_CBC) #creates AES object
     
-    encrypted_fw = cipher.encrypt(Padding.pad(fw, AES.block_size)) #encrypts
+    encrypted_fw = cipher.encrypt(Padding.pad(fw, AES.block_size)) #encrypts firmware
     
     metadata += struct.pack("<H", len(encrypted_fw)) #adds the length of encrypted firmware to metadata
     

@@ -20,9 +20,15 @@ int main(){
     fclose(public_key_file);
     
     unsigned char *data = "this is a test string to be hashed. compress me!";
-    
+    for(int i = 0; i < 256; i++){
+        printf("0x%x/", signed_hash[i]);
+    }
+    printf("\n0x");
+    for(int i = 0; i < 256; i++){
+        printf("%x", modulus[i]);
+    }
     printf("yo\n");
-    
+    /*
     for(int i = 0; i < exp_size; i++){
         if(exponent[i] == 0x0){
             printf("0x00/");
@@ -32,7 +38,8 @@ int main(){
             printf("error: %ud", exponent[i]);
         }
     }
-    printf("%d", verify_rsa_signature(signed_hash, modulus, exponent, exp_size, data, 48));
+    */
+    printf("%d", verify_rsa_signature(signed_hash, modulus, exponent, exp_size, data, 49));
     printf("\n");
     return 0;
 }

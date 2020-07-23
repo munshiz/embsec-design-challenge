@@ -29,6 +29,21 @@ FRAME_SIZE = 16
 
 
 def send_metadata(ser, metadata, debug=False):
+    """
+    Metadata(version number, size of encrypted firmware) will come prepended and a copy will come signed with the hash of the firmware.
+    An unsigned metadata will come prepended to the signed hash in order for us to be able to display and send it here.
+    
+    The data looks like this:
+    plaintext(version | size(F)) | signed(hash(F) | version | size(F)) | F
+    
+    The size of the decrypted firmware will come in the encrypted metadata in the actual firmware. 
+    The metadata appended to the hash will incorporate only a copy of the version number and a calculated size of the encrypted firmware,
+    and will be the same metadata that will be prepended to the signed hash.
+    
+    This leaves us with 3 copies of the version number and 2 copies of the encrypted firmware's size, 
+    and no need to change the send_metadata method.
+    
+    """
     version, size = struct.unpack_from('<HH', metadata)
     print(f'Version: {version}\nSize: {size} bytes\n')
 
