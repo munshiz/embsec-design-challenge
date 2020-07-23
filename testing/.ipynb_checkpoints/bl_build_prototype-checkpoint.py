@@ -53,12 +53,10 @@ def make_bootloader():
     # f.write(rsa_key.export_key('PEM'))
     # f.close()
     aes_key = AES.get_random_bytes(16)
-    aes_iv = AES.get_random_bytes(16)
 
     # print('BEFORE WRITING: \n')
     # print('RSA key: ', rsa_key)
     # print('AES key: ', aes_key)
-    # print('AES IV: ', aes_iv, '\n')
 
     with open('secret_build_output.txt', 'w+b') as fh:
         fh.write(aes_key)
