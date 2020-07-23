@@ -79,8 +79,9 @@ def main(ser, infile, debug):
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read()
 
-    metadata = firmware_blob[256:260]
-    firmware = firmware_blob[0:255] + firmware_blob[260:]
+    signed_hash
+    metadata = firmware_blob[256:262]
+    firmware = firmware_blob[262:]
 
     send_metadata(ser, metadata, debug=debug)
 
