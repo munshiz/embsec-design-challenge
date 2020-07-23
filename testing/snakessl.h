@@ -1,5 +1,5 @@
 /* 
- * Wrapper around a bearssl implementation of RSA signing
+ * Wrapper around a BearSSL implementation of RSA signing
  * Made by Tom Hughes
  *
  * Note: there is no use or implementation of ssl in this file
@@ -16,10 +16,10 @@
  * PKCS#1 v1.5 signature verification
  * Parameters:
  * signature: the signed hash
- * modulus: the rsa modulus, using MODULUS_SIZE bytes
+ * modulus: the rsa modulus, using MODULUS_SIZE bytes in big endian format.
  * exponent: the public exponent in big endian format. leading 0 bytes are allowed.
  * exp_size: size of the exponent in bytes
- * data: the data authenticity to be checked
+ * data: the data to be checked for authenticity
  * data_len: the length of the data
  *
  * return values:

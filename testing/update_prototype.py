@@ -79,7 +79,7 @@ def main(ser, infile, debug):
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read()
 
-    signed_hash
+    signed_hash = firmware_blob[:256]
     metadata = firmware_blob[256:262]
     firmware = firmware_blob[262:]
 
