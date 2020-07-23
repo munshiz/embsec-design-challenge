@@ -24,7 +24,7 @@ long program_flash(uint32_t, unsigned char*, unsigned int);
 #define METADATA_BASE 0xFC00  // base address of version and firmware size in Flash
 #define FW_BASE 0x10000  // base address of firmware in Flash
 
-
+#define MAX_ENCRYPTED_DATA_SIZE 31 * 1024
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -47,8 +47,6 @@ uint16_t *fw_version_address = (uint16_t *) METADATA_BASE;
 uint16_t *fw_size_address = (uint16_t *) (METADATA_BASE + 2);
 uint8_t *fw_release_message_address;
 
-// Firmware Buffer
-unsigned char data[30 * 1024];
 
 
 int main(void) {
@@ -120,11 +118,12 @@ void load_firmware(void)
   uint32_t size = 0;
   uint32_t encrypted_size = 0;
   // Get signed hash.
-  unsigned char signed_hash[32];
-  for(int i = 0; i < 32; i++){
+  unsigned char signed_hash[256];
+  for(int i = 0; i < 256; i++){
     signed_hash[i] = uart_read(UART1, BLOCKING, &read);
   }
   uart_write(UART1, OK);
+  
   // Get version.
   rcv = uart_read(UART1, BLOCKING, &read);
   version = (uint32_t)rcv;
@@ -155,7 +154,8 @@ void load_firmware(void)
   uart_write_str(UART2, "Received Encrypted Firmware Size: ");
   uart_write_hex(UART2, encrypted_size);
   nl(UART2)
-  if(encrypted_size > 30 * 1024){
+  if(encrypted_size > MAX_ENCRYPTED_DATA_SIZE || encrypted_size % 16 != 0){
+    uart_write(UART1, ERROR);
     uart_write_str(UART2, "Nice try, nerd.");
     SysCtlReset();
     return;
@@ -177,27 +177,48 @@ void load_firmware(void)
   
   // Write new firmware size and version to Flash
   // Create 32 bit word for flash programming, version is at lower address, size is at higher address
-  uint64_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
+  uint32_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
   program_flash(METADATA_BASE, (uint8_t*)(&metadata), 4);
   fw_release_message_address = (uint8_t *) (FW_BASE + size);
 
   uart_write(UART1, OK); // Acknowledge the metadata.
   
-  unsigned char iv[16];
+  // Firmware Buffer
+  unsigned char data[6 + 16 + MAX_ENCRYPTED_DATA_SIZE];
+  data[0] = (version & 0xFF00) >> 8;
+  data[1] = version & 0x00FF;
+  data[2] = (size & 0xFF00) >> 8;
+  data[3] = size & 0x00FF;
+  data[4] = (encrypted_size & 0xFF00) >> 8;
+  data[5] = encrypted_size & 0x00FF;
   
-  for(int i = 0; i < 16; i++){
-    
+  for(int i = 6; i < 22; i++){ // get IV
+    data[i] = uart_read(UART1, BLOCKING, &read);
   }
   
+  uart_write(UART1, OK);
+  
   /* Loop here until you can get all your characters and stuff */
-  while (1) {
+  data_index = 22;
+  while(data_index < 6 + 16 + encrypted_size) {
 
     // Get two bytes for the length.
     rcv = uart_read(UART1, BLOCKING, &read);
     frame_length = (int)rcv << 8;
     rcv = uart_read(UART1, BLOCKING, &read);
     frame_length += (int)rcv;
-
+    
+    if(frame_length == 0){ // if firmware end is too early
+      uart_write_str(UART2, "Nice try, nerd");
+      uart_write(UART1, ERROR);
+      SysCtlReset();
+      return;
+    } else if(data_index + frame_length > 22 + encrypted_size){ // if firmware is larger than the size declares
+      uart_write_str(UART2, "Nice try, nerd");
+      uart_write(UART1, ERROR);
+      SysCtlReset();
+      return;
+    }
     // Write length debug message
     uart_write_hex(UART2,(unsigned char)rcv);
     nl(UART2);
@@ -206,38 +227,45 @@ void load_firmware(void)
     for (int i = 0; i < frame_length; ++i){
         data[data_index] = uart_read(UART1, BLOCKING, &read);
         data_index += 1;
-    } //for
-
-    // If we filed our page buffer, program it
-    if (data_index == FLASH_PAGESIZE || frame_length == 0) {
-      // Try to write flash and check for error
-      if (program_flash(page_addr, data, data_index)){
-        uart_write(UART1, ERROR); // Reject the firmware
-        SysCtlReset(); // Reset device
-        return;
-      }
-#if 1
-      // Write debugging messages to UART2.
-      uart_write_str(UART2, "Page successfully programmed\nAddress: ");
-      uart_write_hex(UART2, page_addr);
-      uart_write_str(UART2, "\nBytes: ");
-      uart_write_hex(UART2, data_index);
-      nl(UART2);
-#endif
-
-      // Update to next page
-      page_addr += FLASH_PAGESIZE;
-      data_index = 0;
-
-      // If at end of firmware, go to main
-      if (frame_length == 0) {
-        uart_write(UART1, OK);
-        break;
-      }
-    } // if
-
+    }
     uart_write(UART1, OK); // Acknowledge the frame.
-  } // while(1)
+  }
+  
+  rcv = uart_read(UART1, BLOCKING, &read);
+  frame_length = (int)rcv << 8;
+  rcv = uart_read(UART1, BLOCKING, &read);
+  frame_length += (int)rcv;
+  if(frame_length != 0){ // if someone is sending more data than the bootloader was told to accept
+    uart_write_str(UART2, "Nice try, nerd");
+    uart_write(UART1, ERROR);
+    SysCtlReset();
+    return;
+  }
+  uart_write(UART1, OK);
+  
+  
+  unsigned char * modulus = MODULUS;
+  unsigned char * exponent = EXPONENT;
+  
+  int rsa_result = verify_rsa_signature(signed_hash, MODULUS, EXPONENT, EXP_SIZE, data, 22 + encrypted_size);
+  if(rsa_result == -1){
+    uart_write_str(UART2, "Unexpected user error");
+    SysCtlReset();
+    return;
+  } else if(rsa_result == 0){
+    uart_write_str(UART2, "Nice try, nerd");
+    SysCtlReset();
+    return;
+  }
+  char * aes_key = AES_KEY;
+  aes_decrypt(aes_key, data + 6, data + 22, encrypted_size);
+  
+  int page = 0;
+  
+  while(encrypted_size - page * FLASH_PAGESIZE > FLASH_PAGESIZE){
+    program_flash(FW_BASE + page * FLASH_PAGESIZE, data + 22 + page * FLASH_PAGESIZE, FLASH_PAGESIZE);
+  }
+  program_flash(FW_BASE + page * FLASH_PAGESIZE, data + 22 + page * FLASH_PAGESIZE, encrypted_size - page * FLASH_PAGESIZE);
 }
 
 
