@@ -26,8 +26,19 @@ from serial import Serial
 
 RESP_OK = b'\x00'
 FRAME_SIZE = 16
+def send_hash(ser, signed_hash, debug=False):
+    
+    # Send signed hash to bootloader.
+    if debug:
+        print(metadata)
+    
+    ser.write(signed_hash)
+    # Wait for an OK from the bootloader.
+    resp = ser.read()
+    if resp != RESP_OK:
+        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
 
-
+        
 def send_metadata(ser, metadata, debug=False):
     """
     f = unencrypted firmware
@@ -38,12 +49,12 @@ def send_metadata(ser, metadata, debug=False):
     version, firmware_size, encrypted_firm_size = struct.unpack_from('<HHH', metadata)
     print(f'Version: {version}\nFirmware Size: {firmware_size} bytes\nEncrypted Firmware size: {encrypted_firm_size}')
 
-    # Handshake for update
-    ser.write(b'U')
+#     # Handshake for update
+#     ser.write(b'U')
     
-    print('Waiting for bootloader to enter update mode...')
-    while ser.read(1).decode() != 'U':
-        pass
+#     print('Waiting for bootloader to enter update mode...')
+#     while ser.read(1).decode() != 'U':
+#         pass
 
     # Send size and version to bootloader.
     if debug:
@@ -58,6 +69,7 @@ def send_metadata(ser, metadata, debug=False):
 
 
 def send_frame(ser, frame, debug=False):
+    if frame
     ser.write(frame)  # Write the frame...
 
     if debug:
@@ -78,11 +90,20 @@ def main(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read()
+
     signed_hash = firmware_blob[:256]
     metadata = firmware_blob[256:262]
     iv = firmware_blob[262:278]
     firmware = firmware_blob[278:]
-
+    
+    # Handshake for update
+    ser.write(b'U')
+    
+    print('Waiting for bootloader to enter update mode...')
+    while ser.read(1).decode() != 'U':
+        pass
+    
+    send_hash(ser, signed_hash, debug=debug)
     send_metadata(ser, metadata, debug=debug)
 
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
