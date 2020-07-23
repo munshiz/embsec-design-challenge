@@ -120,8 +120,8 @@ void load_firmware(void)
   uint32_t size = 0;
   uint32_t encrypted_size = 0;
   // Get signed hash.
-  unsigned char signed_hash[256];
-  for(int i = 0; i < 256; i++){
+  unsigned char signed_hash[32];
+  for(int i = 0; i < 32; i++){
     signed_hash[i] = uart_read(UART1, BLOCKING, &read);
   }
   uart_write(UART1, OK);
@@ -183,7 +183,12 @@ void load_firmware(void)
 
   uart_write(UART1, OK); // Acknowledge the metadata.
   
-  unsigned char iv[16]
+  unsigned char iv[16];
+  
+  for(int i = 0; i < 16; i++){
+    
+  }
+  
   /* Loop here until you can get all your characters and stuff */
   while (1) {
 
