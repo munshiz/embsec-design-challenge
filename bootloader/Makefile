@@ -110,6 +110,8 @@ ${COMPILER}:
 #
 # Rules for building the project example.
 #
+${COMPILER}/main.axf: ${COMPILER}/snakessl.o
+${COMPILER}/main.axf: ${COMPILER}/beaverssl.o
 ${COMPILER}/main.axf: ${COMPILER}/uart.o
 ${COMPILER}/main.axf: ${COMPILER}/firmware.o
 ${COMPILER}/main.axf: ${COMPILER}/bootloader.o
