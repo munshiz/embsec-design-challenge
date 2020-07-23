@@ -78,9 +78,10 @@ def main(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read()
-    signed_hash = firmware_blob[:256]
-    metadata = firmware_blob[256:262]
-    firmware = firmware_blob[262:]
+    signed_hash = firmware_blob[:32]
+    metadata = firmware_blob[32:38]
+    iv = firmware_blob[38:44]
+    firmware = firmware_blob[44:]
 
     send_metadata(ser, metadata, debug=debug)
 
