@@ -48,6 +48,10 @@ def make_bootloader():
     os.chdir(bootloader)
     
     rsa_key = RSA.generate(2048)
+    #need to provision: RSA modulus, exponent, exponent size
+    modulus = rsa_key.publickey().n
+    exponent = rsa_key.publickey().e
+    exponent_size = len(exponent)
 
     # f = open('mykey.pem','wb')
     # f.write(rsa_key.export_key('PEM'))
@@ -60,12 +64,25 @@ def make_bootloader():
 
     with open('secret_build_output.txt', 'w+b') as fh:
         fh.write(aes_key)
+<<<<<<< HEAD
+        fh.write(rsa_key.export_key('DER'))
+        fh.write()
+#         fh.write(aes_iv)
+=======
         fh.write(rsa_key.export_key())
+>>>>>>> 9e31262afc6482ecddbbe639b4a57298cc63f796
 
     subprocess.call('make clean', shell=True)
 #     status = subprocess.call('make')
 #     status = subprocess.call('make KEY=VALUE', shell=True)
+<<<<<<< HEAD
+    status = subprocess.call(f'make KEY1={to_c_array(aes_key)}', shell=True)
+    status = subprocess.call(f'make KEY2={to_c_array(modulus)}', shell=True)
+    status = subprocess.call(f'make KEY3={to_c_array(exponent)}', shell=True)
+    status = subprocess.call(f'make KEY4={to_c_array(exponent_size)}', shell=True)
+=======
     status = subprocess.call(f'make AES_KEY={to_c_array(aes_key)} MODULUS={to_c_array((rsa_key.publickey().n).to_bytes(256, "big"))} EXPONENT={to_c_array(struct.pack(">Q", rsa_key.publickey().e))} EXP_SIZE=8', shell=True)
+>>>>>>> 9e31262afc6482ecddbbe639b4a57298cc63f796
 
     # Return True if make returned 0, otherwise return False.
     return (status == 0)

@@ -64,8 +64,9 @@ include ./makedefs
 
 CFLAGS+=-g
 CFLAGS+=-D AES_KEY=${KEY1}
-CFLAGS+=-D AES_IV=${KEY2}
-CFLAGS+=-D RSA_PUBLIC_KEY=${KEY3}
+CFLAGS+=-D RSA_PUBLIC_MODULUS=${KEY2}
+CFLAGS+=-D RSA_PUBLIC_EXPONENT=${KEY3}
+CFLAGS+=-D RSA_PUBLIC_EXPONENT_SIZE=${KEY4}
 
 #
 # Where to find header files that do not live in this directory.
