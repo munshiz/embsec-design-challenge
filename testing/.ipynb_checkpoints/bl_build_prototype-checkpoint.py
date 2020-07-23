@@ -66,7 +66,11 @@ def make_bootloader():
         fh.write(aes_iv)
 
     subprocess.call('make clean', shell=True)
-    status = subprocess.call('make')
+#     status = subprocess.call('make')
+#     status = subprocess.call('make KEY=VALUE', shell=True)
+    status = subprocess.call(f'make KEY1={to_c_array(aes_key)}', shell=True)
+    status = subprocess.call(f'make KEY2={to_c_array(aes_iv)}', shell=True)
+    status = subprocess.call(f'make KEY3={to_c_array(rsa_key)}', shell=True)
 
     # Return True if make returned 0, otherwise return False.
     return (status == 0)
@@ -88,4 +92,7 @@ if __name__ == '__main__':
 
     copy_initial_firmware(binary_path)
     make_bootloader()
+    
+def to_c_array(binary_string):
+	return "{" + ",".join([hex(c) for c in binary_string]) + "}"
 

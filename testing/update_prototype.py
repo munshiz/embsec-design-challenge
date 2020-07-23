@@ -81,7 +81,8 @@ def main(ser, infile, debug):
 
     signed_hash = firmware_blob[:256]
     metadata = firmware_blob[256:262]
-    firmware = firmware_blob[262:]
+    iv = firmware_blob[262:278]
+    firmware = firmware_blob[278:]
 
     send_metadata(ser, metadata, debug=debug)
 
