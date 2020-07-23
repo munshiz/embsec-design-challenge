@@ -24,7 +24,7 @@ long program_flash(uint32_t, unsigned char*, unsigned int);
 #define METADATA_BASE 0xFC00  // base address of version and firmware size in Flash
 #define FW_BASE 0x10000  // base address of firmware in Flash
 
-
+#define MAX_ENCRYPTED_DATA_SIZE 31 * 1024
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -154,7 +154,7 @@ void load_firmware(void)
   uart_write_str(UART2, "Received Encrypted Firmware Size: ");
   uart_write_hex(UART2, encrypted_size);
   nl(UART2)
-  if(encrypted_size > 30 * 1024 || encrypted_size % 16 != 0){
+  if(encrypted_size > MAX_ENCRYPTED_DATA_SIZE || encrypted_size % 16 != 0){
     uart_write(UART1, ERROR);
     uart_write_str(UART2, "Nice try, nerd.");
     SysCtlReset();
@@ -184,7 +184,7 @@ void load_firmware(void)
   uart_write(UART1, OK); // Acknowledge the metadata.
   
   // Firmware Buffer
-  unsigned char data[6 + 16 + encrypted_size];
+  unsigned char data[6 + 16 + MAX_ENCRYPTED_DATA_SIZE];
   data[0] = (version & 0xFF00) >> 8;
   data[1] = version & 0x00FF;
   data[2] = (size & 0xFF00) >> 8;
@@ -243,6 +243,10 @@ void load_firmware(void)
   }
   uart_write(UART1, OK);
   
+  
+  unsigned char * modulus = MODULUS;
+  unsigned char * exponent = EXPONENT;
+  
   int rsa_result = verify_rsa_signature(signed_hash, MODULUS, EXPONENT, EXP_SIZE, data, 22 + encrypted_size);
   if(rsa_result == -1){
     uart_write_str(UART2, "Unexpected user error");
@@ -253,8 +257,8 @@ void load_firmware(void)
     SysCtlReset();
     return;
   }
-  
-  aes_decrypt(AES_KEY, data + 6, data + 22, encrypted_size);
+  char * aes_key = AES_KEY;
+  aes_decrypt(aes_key, data + 6, data + 22, encrypted_size);
   
   int page = 0;
   
