@@ -69,7 +69,6 @@ def send_metadata(ser, metadata, debug=False):
 
 
 def send_frame(ser, frame, debug=False):
-    if frame
     ser.write(frame)  # Write the frame...
 
     if debug:
