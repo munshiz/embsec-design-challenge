@@ -63,10 +63,10 @@ BEARSSL=${LIB}/BearSSL
 include ./makedefs
 
 CFLAGS+=-g
-CFLAGS+=-D AES_KEY=${KEY1}
-CFLAGS+=-D RSA_PUBLIC_MODULUS=${KEY2}
-CFLAGS+=-D RSA_PUBLIC_EXPONENT=${KEY3}
-CFLAGS+=-D RSA_PUBLIC_EXPONENT_SIZE=${KEY4}
+CFLAGS+=-D AES_KEY=${KEY}
+CFLAGS+=-D MODULUS=${MOD}
+CFLAGS+=-D EXPONENT=${EXP}
+CFLAGS+=-D EXP_SIZE=${E_SIZE}
 
 #
 # Where to find header files that do not live in this directory.
