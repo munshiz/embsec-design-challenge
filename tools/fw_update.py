@@ -56,6 +56,9 @@ def send_hash(ser, signed_hash, debug=False):
     
     # Wait for an OK from the bootloader.
     resp = ser.read()
+    
+    time.sleep(0.1)
+    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -94,9 +97,12 @@ def send_metadata(ser, metadata, debug=False):
         print(metadata)
 
     ser.write(metadata) # send metadata to bootloader
-
+    
     # Wait for an OK from the bootloader.
     resp = ser.read()
+    
+    time.sleep(0.1)
+    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -118,9 +124,13 @@ def send_iv(ser, iv, debug=False):
     """
     if debug:
         print(iv)
+    
     ser.write(iv)
     
     resp = ser.read()
+    
+    time.sleep(0.1)
+    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
