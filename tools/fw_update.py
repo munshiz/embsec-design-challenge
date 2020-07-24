@@ -40,13 +40,19 @@ def send_hash(ser, signed_hash, debug=False):
     
     Returns: 0 if a confirmation is recieved from the bootloader. Otherwise throws an error.
     Outputs: sends signed hash over serial
+    
+    Arguments:
+    {ser}: serial write
+    {signed_hash}: the signed hash from the main method to be sent
+    {debug}: if this is set to true, it allows us to see the metadata (for debugging purposes)
+    
     """
     
     # Send signed hash to bootloader.
     if debug:
         print(metadata)
     
-    ser.write(signed_hash)
+    ser.write(signed_hash) # actually sends the signed hash
     
     # Wait for an OK from the bootloader.
     resp = ser.read()
@@ -64,6 +70,12 @@ def send_metadata(ser, metadata, debug=False):
     
     Returns: 0 if a confirmation is recieved from the bootloader. Otherwise throws an error.
     Outputs: sends plaintext metadata over serial
+    
+    Arguments:
+    {ser}: serial write functionality
+    {metadata}: the data to be sent, from the main function
+    {debug}: if this is set to true, it allows us to see the metadata (for debugging purposes)
+    
     """
     
     
@@ -81,7 +93,7 @@ def send_metadata(ser, metadata, debug=False):
     if debug:
         print(metadata)
 
-    ser.write(metadata)
+    ser.write(metadata) # send metadata to bootloader
 
     # Wait for an OK from the bootloader.
     resp = ser.read()
@@ -91,6 +103,19 @@ def send_metadata(ser, metadata, debug=False):
         return 0
 
 def send_iv(ser, iv, debug=False):
+    """
+    Prints plaintext AES IV and sends it to the bootloader.
+    After sending the IV, waits for confirmation from the bootloader
+    
+    Returns: 0 if a confirmation is recieved from the bootloader. Otherwise throws an error.
+    Outputs: sends plaintext AES IV over serial
+    
+    Arguments:
+    {ser}: serial write functionality
+    {iv}: the data to be sent, from the main function
+    {debug}: if this is set to true, it allows us to see the iv (for debugging purposes)
+    
+    """
     if debug:
         print(iv)
     ser.write(iv)
@@ -129,10 +154,17 @@ def send_frame(ser, frame, debug=False):
         return 0
 
 def main(ser, infile, debug):
+    """
+    Arguments are:
+    {ser}: serial read/write
+    {infile}: the entire firmware blob (created by fw_protect.py) to be sent to the bootloader
+    {outfile}:
+    """
     
     with open(infile, 'rb') as fp:
         firmware_blob = fp.read() # read firmware blob from {infile}
 
+    # declares a bunch of variables for use in send_hash, send_metadata, and send_iv methods
     signature_length = 256 # the signature is 256 bytes long
     metadata_length = 6 # the metadata is 6 bytes long
     iv_length = 16 # the IV is 16 bytes long
@@ -160,8 +192,9 @@ def main(ser, infile, debug):
     
     send_hash(ser, signed_hash, debug=debug) # send the signed hash
     send_metadata(ser, metadata, debug=debug) # send the metadata
-    send_iv(ser, iv, debug=debug)
+    send_iv(ser, iv, debug=debug) #sends AES IV
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)): # WARNING: if the IV will be sent separately, delete it, and have it be sent before the firmware begins sending.
+        # breaks up  data to be sent into 16 byte frames for the bootloader to take in
         data = firmware[frame_start: frame_start + FRAME_SIZE]
 
         # Get length of data.
@@ -177,7 +210,7 @@ def main(ser, infile, debug):
         send_frame(ser, frame, debug=debug) # sends frame
     print("Done writing firmware.")
     
-    # Send a zero length payload to tell the bootlader to finish writing it's page.
+    # Send a zero length payload to tell the bootlader to finish writing its page.
     ser.write(struct.pack('>H', 0x0000))
 
     return ser
