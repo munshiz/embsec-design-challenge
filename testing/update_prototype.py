@@ -24,15 +24,27 @@ import time
 
 from serial import Serial
 
+"""
+f = unencrypted firmware
+F = encrypted firmware
+signed(hash(metadata| IV | F)) | version | size(f) | size(F) | IV | F
+    
+"""
 RESP_OK = b'\x00'
 FRAME_SIZE = 16
 def send_hash(ser, signed_hash, debug=False):
+    """
+    Sends signed hash of the firmware, IV, and metadata over serial to the bootloader.
+    The data looks like this: signed(hash(metadata | IV | F))
+    After sending the signed hash, waits for confirmation from the bootloader.
+    """
     
     # Send signed hash to bootloader.
     if debug:
         print(metadata)
     
     ser.write(signed_hash)
+    
     # Wait for an OK from the bootloader.
     resp = ser.read()
     if resp != RESP_OK:
@@ -41,15 +53,16 @@ def send_hash(ser, signed_hash, debug=False):
         
 def send_metadata(ser, metadata, debug=False):
     """
-    f = unencrypted firmware
-    F = encrypted firmware
-    signed(hash(metadata| IV | F)) | version | size(f) | size(F) | IV | F
-    
+    Prints plaintext metadata and sends it to the bootloader.
+    The data looks like this: version | size(f) | size(F)
+    After sending the metadata, waits for confirmation from the bootloader
     """
+    
+    
     version, firmware_size, encrypted_firm_size = struct.unpack_from('<HHH', metadata)
     print(f'Version: {version}\nFirmware Size: {firmware_size} bytes\nEncrypted Firmware size: {encrypted_firm_size}')
 
-#     # Handshake for update
+#     # Handshake for update                                      #old code: moved to main
 #     ser.write(b'U')
     
 #     print('Waiting for bootloader to enter update mode...')
@@ -69,7 +82,12 @@ def send_metadata(ser, metadata, debug=False):
 
 
 def send_frame(ser, frame, debug=False):
-    if frame
+    """
+    Sends a frame of data to the bootloader.
+    If the bootloader does not confirm, raises an error.
+    The structure of the frames is explained at the top of the page
+    """
+    
     ser.write(frame)  # Write the frame...
 
     if debug:
@@ -106,7 +124,7 @@ def main(ser, infile, debug):
     send_hash(ser, signed_hash, debug=debug)
     send_metadata(ser, metadata, debug=debug)
 
-    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
+    for idx, frame_start in enumerate(range(0, len(iv + firmware), FRAME_SIZE)): #if the IV will be sent separately, delete it, and have it be sent before the firmware begins sending.
         data = firmware[frame_start: frame_start + FRAME_SIZE]
 
         # Get length of data.
