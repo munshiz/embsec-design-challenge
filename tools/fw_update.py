@@ -177,11 +177,8 @@ def main(ser, infile, debug):
     #assignments to corresponding sections of the {firmware_blob}
     signed_hash = firmware_blob[signature_length] # starts in the beginning
     metadata = firmware_blob[metadata_start : iv_start]
-    
-    encrypted_firm_size = struct.unpack_from('<HHH', metadata)[2] # finds encrypted firmware size
-    
     iv = firmware_blob[iv_start : firmware_start]
-    firmware = firmware_blob[firmware_start: firmware_start + encrypted_firm_size] # ends after however many bytes the encrypted firmware is
+    firmware = firmware_blob[firmware_start: ]
     
     # Handshake for update
     ser.write(b'U')
