@@ -73,7 +73,7 @@ def make_bootloader():
     subprocess.call('make clean', shell=True)
 #     status = subprocess.call('make')
 #     status = subprocess.call('make KEY=VALUE', shell=True)
-    status = subprocess.call(f'make AES_KEY={to_c_array(aes_key)} MODULUS={to_c_array((rsa_key.publickey().n).to_bytes(256, "big"))} EXPONENT={to_c_array(struct.pack(">Q", rsa_key.publickey().e))} EXP_SIZE=8', shell=True)
+    status = subprocess.call(f'make KEY={to_c_array(aes_key)} MOD={to_c_array((rsa_key.publickey().n).to_bytes(256, "big"))} EXP={to_c_array(struct.pack(">Q", rsa_key.publickey().e))} E_SIZE=8', shell=True)
 
     # Return True if make returned 0, otherwise return False.
     return (status == 0)
