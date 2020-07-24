@@ -50,12 +50,12 @@ def send_hash(ser, signed_hash, debug=False):
     
     # Send signed hash to bootloader.
     if debug:
-        print(metadata)
+        print(signed_hash)
     
     ser.write(signed_hash) # actually sends the signed hash
     
     # Wait for an OK from the bootloader.
-    resp = ser.read()
+    resp = ser.read(1)
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -96,7 +96,7 @@ def send_metadata(ser, metadata, debug=False):
     ser.write(metadata) # send metadata to bootloader
 
     # Wait for an OK from the bootloader.
-    resp = ser.read()
+    resp = ser.read(1)
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -187,7 +187,7 @@ def main(ser, infile, debug):
     ser.write(b'U')
     
     print('Waiting for bootloader to enter update mode...')
-    while ser.read(1).decode() != 'U':
+    while ser.read(1) != b'U':
         pass
     
     send_hash(ser, signed_hash, debug=debug) # send the signed hash

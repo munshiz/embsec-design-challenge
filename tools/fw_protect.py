@@ -4,6 +4,7 @@ from Crypto.Hash import SHA256
 from Crypto.Util import Padding
 from Crypto.Signature import pkcs1_15
 import struct
+import argparse
 """
 f = unencrypted firmware
 F = encrypted firmware
@@ -34,6 +35,7 @@ def protect_firmware(infile, outfile, version, message):
     """
     with open(infile, 'rb') as f: # reads firmware
         fw = f.read()
+        print(fw)
         
     metadata = struct.pack("<HH", version, len(fw)) # packs initial metadata: version, length  of unencrypted firmware
     fw = fw + message.encode() + b'\00' # appends release message to end of firmware
@@ -48,7 +50,7 @@ def protect_firmware(infile, outfile, version, message):
     
     metadata += struct.pack("<H", len(encrypted_fw)) # adds the length of encrypted firmware to metadata
     
-    hashed_fw = SHA256.new(data = metadata + cipher.iv + encrypted_Fw) # hashes the metadata, IV, and encrypted firmware
+    hashed_fw = SHA256.new(data = metadata + cipher.iv + encrypted_fw) # hashes the metadata, IV, and encrypted firmware
     
     signature = pkcs1_15.new(rsa_key).sign(hashed_fw) # signs the hashed metadata, IV, and firmware using the private key
     
@@ -57,3 +59,13 @@ def protect_firmware(infile, outfile, version, message):
     with open(outfile, "w+b") as out: # writes firmware blob to outfile
         out.write(fw_blob)
     return 0
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Firmware Update Tool')
+    parser.add_argument("--infile", help="Path to the firmware image to protect.", required=True)
+    parser.add_argument("--outfile", help="Filename for the output firmware.", required=True)
+    parser.add_argument("--version", help="Version number of this firmware.", required=True)
+    parser.add_argument("--message", help="Release message for this firmware.", required=True)
+    args = parser.parse_args()
+
+    protect_firmware(infile=args.infile, outfile=args.outfile, version=int(args.version), message=args.message)
