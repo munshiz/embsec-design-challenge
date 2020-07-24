@@ -11,7 +11,8 @@
 
 // Application Imports
 #include "uart.h"
-
+#include "snakessl.h"
+#include "beaverssl.h"
 
 // Forward Declarations
 void load_initial_firmware(void);
@@ -256,8 +257,8 @@ void load_firmware(void)
   uart_write(UART1, OK);
   
   
-  unsigned char * modulus = MODULUS;
-  unsigned char * exponent = EXPONENT;
+  unsigned char modulus[MODULUS_SIZE] = MODULUS;
+  unsigned char exponent[EXP_SIZE] = EXPONENT;
   
   int rsa_result = verify_rsa_signature(signed_hash, modulus, exponent, EXP_SIZE, data, 22 + encrypted_size);
   if(rsa_result == -1){
@@ -269,7 +270,7 @@ void load_firmware(void)
     SysCtlReset();
     return;
   }
-  char * aes_key = AES_KEY;
+  char aes_key[16] = AES_KEY;
   aes_decrypt(aes_key, data + 6, data + 22, encrypted_size);
   
   int page = 0;
