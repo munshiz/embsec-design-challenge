@@ -19,22 +19,25 @@ from Crypto.Signature import pkcs1_15
 from Crypto.Util.Padding import unpad
 import struct
 
-FILE_DIR = pathlib.Path(__file__).parent.absolute()
+FILE_DIR = pathlib.Path(__file__).parent.absolute() # defines the path to the file directory
 
 
 def copy_initial_firmware(binary_path):
     """
     Copy the initial firmware binary to the bootloader build directory
+    Arguments:
+    {binary_path} is the path to the firmware binary
     Return:
         None
     """
     # Change into directory containing tools
     os.chdir(FILE_DIR)
     bootloader = FILE_DIR / '..' / 'bootloader'
-    shutil.copy(binary_path, bootloader / 'src' / 'firmware.bin')
+    shutil.copy(binary_path, bootloader / 'src' / 'firmware.bin') # WARNING: ADD DOCUMENTATION
 
 
 def to_c_array(binary_string):
+    # WARNING: ADD DOCUMENTATION
 	return "{" + ",".join([hex(c) for c in binary_string]) + "}"
 
 
@@ -51,7 +54,7 @@ def make_bootloader():
     bootloader = FILE_DIR / '..' / 'bootloader'
     os.chdir(bootloader)
     
-    rsa_key = RSA.generate(2048)
+    rsa_key = RSA.generate(2048) # generates an RSA key
     #need to provision: RSA modulus, exponent, exponent size
     modulus = rsa_key.publickey().n
     exponent = rsa_key.publickey().e
@@ -60,13 +63,13 @@ def make_bootloader():
     # f = open('mykey.pem','wb')
     # f.write(rsa_key.export_key('PEM'))
     # f.close()
-    aes_key = AES.get_random_bytes(16)
+    aes_key = AES.get_random_bytes(16) # generates a random 16 byte AES key
 
     # print('BEFORE WRITING: \n')
     # print('RSA key: ', rsa_key)
     # print('AES key: ', aes_key)
 
-    with open('secret_build_output.txt', 'w+b') as fh:
+    with open('secret_build_output.txt', 'w+b') as fh: # writes the AES and RSA public key in the {secret_build_output.txt} file
         fh.write(aes_key)
         fh.write(rsa_key.export_key())
 
