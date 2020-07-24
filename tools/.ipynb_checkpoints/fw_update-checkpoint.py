@@ -90,17 +90,6 @@ def send_metadata(ser, metadata, debug=False):
     else:
         return 0
 
-def send_iv(ser, iv, debug=False):
-    if debug:
-        print(iv)
-    ser.write(iv)
-    
-    resp = ser.read()
-    if resp != RESP_OK:
-        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
-    else:
-        return 0
-    
 def send_frame(ser, frame, debug=False):
     """
     Sends a frame of data to the bootloader.
@@ -160,8 +149,9 @@ def main(ser, infile, debug):
     
     send_hash(ser, signed_hash, debug=debug) # send the signed hash
     send_metadata(ser, metadata, debug=debug) # send the metadata
-    send_iv(ser, iv, debug=debug)
-    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)): # WARNING: if the IV will be sent separately, delete it, and have it be sent before the firmware begins sending.
+
+    for idx, frame_start in enumerate(range(0, len(iv + firmware), FRAME_SIZE)): # WARNING: if the IV will be sent separately, delete it, and have it be sent before the firmware begins sending.
+        firmware = iv + firmware # in this case the IV can be treated as part of the firmware since both it and {FRAME_SIZE} are 16 bytes long
         data = firmware[frame_start: frame_start + FRAME_SIZE]
 
         # Get length of data.
