@@ -193,6 +193,7 @@ def main(ser, infile, debug):
     send_hash(ser, signed_hash, debug=debug) # send the signed hash
     send_metadata(ser, metadata, debug=debug) # send the metadata
     send_iv(ser, iv, debug=debug) #sends AES IV
+    
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)): # WARNING: if the IV will be sent separately, delete it, and have it be sent before the firmware begins sending.
         # breaks up  data to be sent into 16 byte frames for the bootloader to take in
         data = firmware[frame_start: frame_start + FRAME_SIZE]
