@@ -56,6 +56,9 @@ def send_hash(ser, signed_hash, debug=False):
     
     # Wait for an OK from the bootloader.
     resp = ser.read()
+    
+    time.sleep(0.1)
+    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -94,9 +97,12 @@ def send_metadata(ser, metadata, debug=False):
         print(metadata)
 
     ser.write(metadata) # send metadata to bootloader
-
+    
     # Wait for an OK from the bootloader.
     resp = ser.read()
+    
+    time.sleep(0.1)
+    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -118,9 +124,13 @@ def send_iv(ser, iv, debug=False):
     """
     if debug:
         print(iv)
+    
     ser.write(iv)
     
     resp = ser.read()
+    
+    time.sleep(0.1)
+    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -177,11 +187,8 @@ def main(ser, infile, debug):
     #assignments to corresponding sections of the {firmware_blob}
     signed_hash = firmware_blob[signature_length] # starts in the beginning
     metadata = firmware_blob[metadata_start : iv_start]
-    
-    encrypted_firm_size = struct.unpack_from('<HHH', metadata)[2] # finds encrypted firmware size
-    
     iv = firmware_blob[iv_start : firmware_start]
-    firmware = firmware_blob[firmware_start: firmware_start + encrypted_firm_size] # ends after however many bytes the encrypted firmware is
+    firmware = firmware_blob[firmware_start: ]
     
     # Handshake for update
     ser.write(b'U')
@@ -193,8 +200,9 @@ def main(ser, infile, debug):
     send_hash(ser, signed_hash, debug=debug) # send the signed hash
     send_metadata(ser, metadata, debug=debug) # send the metadata
     send_iv(ser, iv, debug=debug) #sends AES IV
-    
-    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)): # WARNING: if the IV will be sent separately, delete it, and have it be sent before the firmware begins sending.
+
+    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)): 
+
         # breaks up  data to be sent into 16 byte frames for the bootloader to take in
         data = firmware[frame_start: frame_start + FRAME_SIZE]
 
