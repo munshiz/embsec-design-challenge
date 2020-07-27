@@ -53,9 +53,6 @@ def make_bootloader():
         True if successful, False otherwise.
     """
     # Change into directory containing bootloader.
-    bootloader = FILE_DIR / '..' / 'bootloader'
-    os.chdir(bootloader)
-    
     rsa_key = RSA.generate(2048) # generates a private RSA key object so that a public exponent and modulus can be created
     #need to provision: RSA modulus, exponent, exponent size
     
@@ -70,10 +67,15 @@ def make_bootloader():
     aes_key = AES.get_random_bytes(16) # generates a random 16 byte AES key
 
 
-    with open('secret_build_output.txt', 'w+b') as fh: # writes the AES and RSA private key in the {secret_build_output.txt} file
+    with open('secret_build_output.txt', 'wb+') as fh: # writes the AES and RSA private key in the {secret_build_output.txt} file
+        print("test")
         fh.write(aes_key)                              # this allows the fw_protect tool to import these keys and encrypt/sign data
         fh.write(rsa_key.export_key())
-
+        
+    bootloader = FILE_DIR / '..' / 'bootloader'
+    os.chdir(bootloader)
+    
+    
     subprocess.call('make clean', shell=True) #allows us to pass in arguments to the make file
     #sets all variables in makefile according to ones above (the aes symmetric key, modulus, exponent, and exponent size)
     status = subprocess.call(f'make KEY={to_c_array(aes_key)} MOD={to_c_array((rsa_key.publickey().n).to_bytes(256, "big"))} EXP={to_c_array(struct.pack(">Q", rsa_key.publickey().e))} E_SIZE=8', shell=True)

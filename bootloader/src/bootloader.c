@@ -26,7 +26,7 @@ long program_flash(uint32_t, unsigned char*, unsigned int);
 #define METADATA_BASE 0xFC00  // base address of version and firmware size in Flash
 #define FW_BASE 0x10000  // base address of firmware in Flash
 
-#define MAX_ENCRYPTED_DATA_SIZE 31 * 1024
+
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -49,7 +49,9 @@ uint16_t *fw_version_address = (uint16_t *) METADATA_BASE;
 uint16_t *fw_size_address = (uint16_t *) (METADATA_BASE + 2);
 uint8_t *fw_release_message_address;
 
+// Firmware Buffer
 
+#define MAX_ENCRYPTED_DATA_SIZE 31 * 1024
 
 int main(void) {
 
@@ -136,6 +138,7 @@ void load_firmware(void)
   for(int i = 0; i < 256; i++){
     signed_hash[i] = uart_read(UART1, BLOCKING, &read);
   }
+  uart_write_str(UART2, "loop passed");
   uart_write(UART1, OK);
   
   // Get version.

@@ -50,15 +50,14 @@ def send_hash(ser, signed_hash, debug=False):
     
     # Send signed hash to bootloader.
     if debug:
-        print(metadata)
+        print(signed_hash)
     
     ser.write(signed_hash) # actually sends the signed hash
     
     # Wait for an OK from the bootloader.
-    resp = ser.read()
+    resp = ser.read(1)
     
     time.sleep(0.1)
-    
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
     else:
@@ -99,7 +98,7 @@ def send_metadata(ser, metadata, debug=False):
     ser.write(metadata) # send metadata to bootloader
     
     # Wait for an OK from the bootloader.
-    resp = ser.read()
+    resp = ser.read(1)
     
     time.sleep(0.1)
     
@@ -163,7 +162,7 @@ def send_frame(ser, frame, debug=False):
     else:
         return 0
 
-def main(ser, infile, debug):
+def main(ser, infile, debug=True):
     """
     Arguments are:
     {ser}: serial read/write
@@ -185,7 +184,7 @@ def main(ser, infile, debug):
     firmware_start = iv_start + iv_length # the firmware begins after the IV
     
     #assignments to corresponding sections of the {firmware_blob}
-    signed_hash = firmware_blob[signature_length] # starts in the beginning
+    signed_hash = firmware_blob[0: signature_length] # starts in the beginning
     metadata = firmware_blob[metadata_start : iv_start]
     iv = firmware_blob[iv_start : firmware_start]
     firmware = firmware_blob[firmware_start: ]
@@ -194,7 +193,7 @@ def main(ser, infile, debug):
     ser.write(b'U')
     
     print('Waiting for bootloader to enter update mode...')
-    while ser.read(1).decode() != 'U':
+    while ser.read(1) != b'U':
         pass
     
     send_hash(ser, signed_hash, debug=debug) # send the signed hash
