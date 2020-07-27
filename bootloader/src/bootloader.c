@@ -51,7 +51,7 @@ uint8_t *fw_release_message_address;
 
 // Firmware Buffer
 
-#define MAX_ENCRYPTED_DATA_SIZE 31 * 1024
+#define MAX_ENCRYPTED_DATA_SIZE 31744
 
 int main(void) {
 
@@ -135,8 +135,11 @@ void load_firmware(void)
   uint32_t encrypted_size = 0;
   // Get signed hash.
   unsigned char signed_hash[256];
+  uart_write_str(UART2, "entering loop");
   for(int i = 0; i < 256; i++){
     signed_hash[i] = uart_read(UART1, BLOCKING, &read);
+    uart_write_hex(UART2, i);
+    nl(UART2);
   }
   uart_write_str(UART2, "loop passed");
   uart_write(UART1, OK);
