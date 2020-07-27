@@ -162,7 +162,7 @@ def send_frame(ser, frame, debug=False):
     else:
         return 0
 
-def main(ser, infile, debug):
+def main(ser, infile, debug=True):
     """
     Arguments are:
     {ser}: serial read/write
@@ -184,7 +184,7 @@ def main(ser, infile, debug):
     firmware_start = iv_start + iv_length # the firmware begins after the IV
     
     #assignments to corresponding sections of the {firmware_blob}
-    signed_hash = firmware_blob[signature_length] # starts in the beginning
+    signed_hash = firmware_blob[0: signature_length] # starts in the beginning
     metadata = firmware_blob[metadata_start : iv_start]
     iv = firmware_blob[iv_start : firmware_start]
     firmware = firmware_blob[firmware_start: ]
