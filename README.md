@@ -19,7 +19,7 @@ The firmware protect tool takes in the unencrypted firmware file and generates a
 
  - f = unencrypted firmware
  - F = encrypted firmware
-metadata = version | size(f) | size(F)
+ - metadata = version | size(f) | size(F)
 signed(hash(metadata | IV | F)) | metadata | IV | F
 
 The firmware update tool sends the output of the above process to the bootloader in frames.
