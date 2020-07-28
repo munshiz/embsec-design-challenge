@@ -188,7 +188,7 @@ void load_firmware(void)
   // Compare to old version and abort if older (note special case for version 0).
   uint16_t old_version = *fw_version_address;
 
-  if (version != 0 && version <= old_version) {
+  if (version != 0 && version < old_version) {
     uart_write(UART1, ERROR); // Reject the metadata.
     uart_write_str(UART2, "Nice try, nerd");
     SysCtlReset(); // Reset device
@@ -197,16 +197,14 @@ void load_firmware(void)
     // If debug firmware, don't change version
     version = old_version;
   }
-  uart_write_str(UART2, "starting to program flash");
+  
   // Write new firmware size and version to Flash
   // Create 32 bit word for flash programming, version is at lower address, size is at higher address
   uint32_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
   program_flash(METADATA_BASE, (uint8_t*)(&metadata), 4);
   fw_release_message_address = (uint8_t *) (FW_BASE + size);
-  uart_write_str(UART2, "reaching uart_write");
+  
   uart_write(UART1, OK); // Acknowledge the metadata.
-  uart_write_str(UART2, "passed uart_write");
-  // Firmware Buffer
   
   for(int i = 6; i < 22; i++){ // get IV
     data[i] = uart_read(UART1, BLOCKING, &read);
@@ -262,8 +260,8 @@ void load_firmware(void)
   
   unsigned char modulus[MODULUS_SIZE] = MODULUS;
   unsigned char exponent[EXP_SIZE] = EXPONENT;
-  
-  int rsa_result = verify_rsa_signature(signed_hash, modulus, exponent, EXP_SIZE, data, 22 + encrypted_size);
+  // verify rsa signature
+  int rsa_result = verify_rsa_signature(signed_hash, modulus, exponent, EXP_SIZE, data, 22 + encrypted_size); 
   if(rsa_result == -1){
     uart_write_str(UART2, "Unexpected user error");
     SysCtlReset();
@@ -273,12 +271,13 @@ void load_firmware(void)
     SysCtlReset();
     return;
   }
+  // decrypt data with aes CBC mode
   char aes_key[16] = AES_KEY;
   aes_decrypt(aes_key, data + 6, data + 22, encrypted_size);
   uart_write_str(UART2, "passed decryption");
   int page = 0;
   
-  while(encrypted_size - page * FLASH_PAGESIZE > FLASH_PAGESIZE){
+  while(encrypted_size - page * FLASH_PAGESIZE > FLASH_PAGESIZE){ // finally writes to flash memory
     uart_write_str(UART2, "programming flash page:");
     uart_write_hex(UART2, page);
     nl(UART2);
