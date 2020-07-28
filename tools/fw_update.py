@@ -31,7 +31,7 @@ metadata = version | size(f) | size(F)
 signed(hash(metadata | IV | F)) | metadata | IV | F
 """
 RESP_OK = b'\x00'
-FRAME_SIZE = 16
+FRAME_SIZE = 64
 def send_hash(ser, signed_hash, debug=False):
     """
     Sends signed hash of the firmware, IV, and metadata over serial to the bootloader.
@@ -102,7 +102,6 @@ def send_metadata(ser, metadata, debug=False):
     ser.write(metadata) # send metadata to bootloader
     
     # Wait for an OK from the bootloader.
-    resp = ser.read(1)
     
     time.sleep(0.1)
     
@@ -135,7 +134,6 @@ def send_iv(ser, iv, debug=False):
     
     ser.write(iv)
     
-    resp = ser.read()
     
     time.sleep(0.1)
     
@@ -163,8 +161,6 @@ def send_frame(ser, frame, debug=False):
 
     if debug:
         print(frame)
-
-    resp = ser.read()  # Wait for an OK from the bootloader
 
     time.sleep(0.1)
 
