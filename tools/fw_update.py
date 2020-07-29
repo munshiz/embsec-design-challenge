@@ -31,7 +31,7 @@ metadata = version | size(f) | size(F)
 signed(hash(metadata | IV | F)) | metadata | IV | F
 """
 RESP_OK = b'\x00'
-FRAME_SIZE = 16
+FRAME_SIZE = 64
 def send_hash(ser, signed_hash, debug=False):
     """
     Sends signed hash of the firmware, IV, and metadata over serial to the bootloader.
@@ -54,14 +54,18 @@ def send_hash(ser, signed_hash, debug=False):
     
     ser.write(signed_hash) # actually sends the signed hash
     
-    # Wait for an OK from the bootloader.
-    resp = ser.read(1)
-    
     time.sleep(0.1)
-    if resp != RESP_OK:
-        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
-    else:
-        return 0
+    
+    # Wait for an OK from the bootloader.
+    while True:
+        resp = ser.read(1)
+        print(resp)
+        if resp == b'':
+            continue
+        if resp != RESP_OK:
+            raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
+        else:
+            return 0
 
         
 def send_metadata(ser, metadata, debug=False):
@@ -98,14 +102,18 @@ def send_metadata(ser, metadata, debug=False):
     ser.write(metadata) # send metadata to bootloader
     
     # Wait for an OK from the bootloader.
-    resp = ser.read(1)
     
     time.sleep(0.1)
     
-    if resp != RESP_OK:
-        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
-    else:
-        return 0
+    while True:
+        resp = ser.read(1)
+        print(resp)
+        if resp == b'':
+            continue
+        if resp != RESP_OK:
+            raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
+        else:
+            return 0
 
 def send_iv(ser, iv, debug=False):
     """
@@ -126,14 +134,18 @@ def send_iv(ser, iv, debug=False):
     
     ser.write(iv)
     
-    resp = ser.read()
     
     time.sleep(0.1)
     
-    if resp != RESP_OK:
-        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
-    else:
-        return 0
+    while True:
+        resp = ser.read(1)
+        print(resp)
+        if resp == b'':
+            continue
+        if resp != RESP_OK:
+            raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
+        else:
+            return 0
     
 def send_frame(ser, frame, debug=False):
     """
@@ -150,17 +162,20 @@ def send_frame(ser, frame, debug=False):
     if debug:
         print(frame)
 
-    resp = ser.read()  # Wait for an OK from the bootloader
-
     time.sleep(0.1)
 
     if debug:
         print("Resp: {}".format(ord(resp))) # if debug is enabled, print the bootloader's response
     
-    if resp != RESP_OK:
-        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
-    else:
-        return 0
+    while True:
+        resp = ser.read(1)
+        print(resp)
+        if resp == b'':
+            continue
+        if resp != RESP_OK:
+            raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
+        else:
+            return 0
 
 def main(ser, infile, debug=True):
     """
@@ -193,13 +208,19 @@ def main(ser, infile, debug=True):
     ser.write(b'U')
     
     print('Waiting for bootloader to enter update mode...')
-    while ser.read(1) != b'U':
-        pass
-    
+    k = ser.read(1)
+    print(k)
+    while k != b'U':
+        k = ser.read(1)
+        print(k)
+    time.sleep(3)
     send_hash(ser, signed_hash, debug=debug) # send the signed hash
+    time.sleep(3)
     send_metadata(ser, metadata, debug=debug) # send the metadata
+    time.sleep(3)
     send_iv(ser, iv, debug=debug) #sends AES IV
-
+    time.sleep(3)
+    
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)): 
 
         # breaks up  data to be sent into 16 byte frames for the bootloader to take in

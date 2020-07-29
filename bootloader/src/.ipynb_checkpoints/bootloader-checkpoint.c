@@ -49,9 +49,9 @@ uint16_t *fw_version_address = (uint16_t *) METADATA_BASE;
 uint16_t *fw_size_address = (uint16_t *) (METADATA_BASE + 2);
 uint8_t *fw_release_message_address;
 
+#define MAX_ENCRYPTED_DATA_SIZE 31744
 // Firmware Buffer
-
-#define MAX_ENCRYPTED_DATA_SIZE 31 * 1024
+unsigned char data[6 + 16 + MAX_ENCRYPTED_DATA_SIZE];
 
 int main(void) {
 
@@ -104,7 +104,7 @@ void load_initial_firmware(void) {
   }
 
   int size = (int)&_binary_firmware_bin_size;
-  int *data = (int *)&_binary_firmware_bin_start;
+  int *i_data = (int *)&_binary_firmware_bin_start;
     
   uint16_t version = 2;
   uint32_t metadata = (((uint16_t) size & 0xFFFF) << 16) | (version & 0xFFFF);
@@ -113,9 +113,9 @@ void load_initial_firmware(void) {
     
   int i = 0;
   for (; i < size / FLASH_PAGESIZE; i++){
-       program_flash(FW_BASE + (i * FLASH_PAGESIZE), ((unsigned char *) data) + (i * FLASH_PAGESIZE), FLASH_PAGESIZE);
+       program_flash(FW_BASE + (i * FLASH_PAGESIZE), ((unsigned char *) i_data) + (i * FLASH_PAGESIZE), FLASH_PAGESIZE);
   }
-  program_flash(FW_BASE + (i * FLASH_PAGESIZE), ((unsigned char *) data) + (i * FLASH_PAGESIZE), size % FLASH_PAGESIZE);
+  program_flash(FW_BASE + (i * FLASH_PAGESIZE), ((unsigned char *) i_data) + (i * FLASH_PAGESIZE), size % FLASH_PAGESIZE);
 }
 
 
@@ -135,6 +135,7 @@ void load_firmware(void)
   uint32_t encrypted_size = 0;
   // Get signed hash.
   unsigned char signed_hash[256];
+  uart_write_str(UART2, "entering loop");
   for(int i = 0; i < 256; i++){
     signed_hash[i] = uart_read(UART1, BLOCKING, &read);
   }
@@ -144,9 +145,10 @@ void load_firmware(void)
   // Get version.
   rcv = uart_read(UART1, BLOCKING, &read);
   version = (uint32_t)rcv;
+  data[0] = rcv;
   rcv = uart_read(UART1, BLOCKING, &read);
   version |= (uint32_t)rcv << 8;
-
+  data[1] = rcv;
   uart_write_str(UART2, "Received Firmware Version: ");
   uart_write_hex(UART2, version);
   nl(UART2);
@@ -154,8 +156,10 @@ void load_firmware(void)
   // Get size.
   rcv = uart_read(UART1, BLOCKING, &read);
   size = (uint32_t)rcv;
+  data[2] = rcv;
   rcv = uart_read(UART1, BLOCKING, &read);
   size |= (uint32_t)rcv << 8;
+  data[3] = rcv;
   
   
   uart_write_str(UART2, "Received Firmware Size: ");
@@ -165,8 +169,10 @@ void load_firmware(void)
   // Get encrypted size.
   rcv = uart_read(UART1, BLOCKING, &read);
   encrypted_size = (uint32_t)rcv;
+  data[4] = rcv;
   rcv = uart_read(UART1, BLOCKING, &read);
   encrypted_size |= (uint32_t)rcv << 8;
+  data[5] = rcv;
   
   uart_write_str(UART2, "Received Encrypted Firmware Size: ");
   uart_write_hex(UART2, encrypted_size);
@@ -182,7 +188,7 @@ void load_firmware(void)
   // Compare to old version and abort if older (note special case for version 0).
   uint16_t old_version = *fw_version_address;
 
-  if (version != 0 && version <= old_version) {
+  if (version != 0 && version < old_version) {
     uart_write(UART1, ERROR); // Reject the metadata.
     uart_write_str(UART2, "Nice try, nerd");
     SysCtlReset(); // Reset device
@@ -197,17 +203,8 @@ void load_firmware(void)
   uint32_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
   program_flash(METADATA_BASE, (uint8_t*)(&metadata), 4);
   fw_release_message_address = (uint8_t *) (FW_BASE + size);
-
-  uart_write(UART1, OK); // Acknowledge the metadata.
   
-  // Firmware Buffer
-  unsigned char data[6 + 16 + MAX_ENCRYPTED_DATA_SIZE];
-  data[0] = (version & 0xFF00) >> 8;
-  data[1] = version & 0x00FF;
-  data[2] = (size & 0xFF00) >> 8;
-  data[3] = size & 0x00FF;
-  data[4] = (encrypted_size & 0xFF00) >> 8;
-  data[5] = encrypted_size & 0x00FF;
+  uart_write(UART1, OK); // Acknowledge the metadata.
   
   for(int i = 6; i < 22; i++){ // get IV
     data[i] = uart_read(UART1, BLOCKING, &read);
@@ -253,7 +250,7 @@ void load_firmware(void)
   rcv = uart_read(UART1, BLOCKING, &read);
   frame_length += (int)rcv;
   if(frame_length != 0){ // if someone is sending more data than the bootloader was told to accept
-    uart_write_str(UART2, "Nice try, nerd");
+    uart_write_str(UART2, "Nice try, nerd: Too much data is sent.");
     uart_write(UART1, ERROR);
     SysCtlReset();
     return;
@@ -263,24 +260,29 @@ void load_firmware(void)
   
   unsigned char modulus[MODULUS_SIZE] = MODULUS;
   unsigned char exponent[EXP_SIZE] = EXPONENT;
-  
-  int rsa_result = verify_rsa_signature(signed_hash, modulus, exponent, EXP_SIZE, data, 22 + encrypted_size);
+  // verify rsa signature
+  int rsa_result = verify_rsa_signature(signed_hash, modulus, exponent, EXP_SIZE, data, 22 + encrypted_size); 
   if(rsa_result == -1){
     uart_write_str(UART2, "Unexpected user error");
     SysCtlReset();
     return;
   } else if(rsa_result == 0){
-    uart_write_str(UART2, "Nice try, nerd");
+    uart_write_str(UART2, "Nice try, nerd: RSA authentication failure.");
     SysCtlReset();
     return;
   }
+  // decrypt data with aes CBC mode
   char aes_key[16] = AES_KEY;
   aes_decrypt(aes_key, data + 6, data + 22, encrypted_size);
-  
+  uart_write_str(UART2, "passed decryption");
   int page = 0;
   
-  while(encrypted_size - page * FLASH_PAGESIZE > FLASH_PAGESIZE){
+  while(encrypted_size - page * FLASH_PAGESIZE > FLASH_PAGESIZE){ // finally writes to flash memory
+    uart_write_str(UART2, "programming flash page:");
+    uart_write_hex(UART2, page);
+    nl(UART2);
     program_flash(FW_BASE + page * FLASH_PAGESIZE, data + 22 + page * FLASH_PAGESIZE, FLASH_PAGESIZE);
+    page++;
   }
   program_flash(FW_BASE + page * FLASH_PAGESIZE, data + 22 + page * FLASH_PAGESIZE, encrypted_size - page * FLASH_PAGESIZE);
 }

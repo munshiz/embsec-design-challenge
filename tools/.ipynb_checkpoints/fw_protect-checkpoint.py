@@ -38,6 +38,7 @@ def protect_firmware(infile, outfile, version, message):
         print(fw)
         
     metadata = struct.pack("<HH", version, len(fw)) # packs initial metadata: version, length  of unencrypted firmware
+    
     fw = fw + message.encode() + b'\00' # appends release message to end of firmware
     
     with open("secret_build_output.txt", 'rb') as sec_output:
