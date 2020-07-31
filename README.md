@@ -1,3 +1,7 @@
+My team's (The Shifters) code for the MIT Beaverworks Embedded Security and Hardware Hacking final design challenge. The goal was to secure
+a firmware and update tool of a Stellaris Microcontroller.
+
+
 # design-challenge-the-shifters
 design-challenge-the-shifters created by GitHub Classroom
 
